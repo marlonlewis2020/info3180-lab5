@@ -5,10 +5,26 @@ Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
 
-from app import app
-from flask import render_template, request, jsonify, send_file
+from app import app, db
+from app.forms import MovieForm
+from app.models import Movie
+from flask import render_template, request, jsonify, make_response, send_file
+from werkzeug.utils import secure_filename
+from datetime import datetime
 import os
 
+ERROR = {
+    'status': 'error',
+    'errors': []
+}
+
+SUCCESS = {
+    'status': 'success',
+    'message': 'Movie successfully added!',
+    'title': '',
+    'description': '',
+    'poster': ''
+}
 
 ###
 # Routing for your application.
@@ -17,6 +33,44 @@ import os
 @app.route('/')
 def index():
     return jsonify(message="This is the beginning of our API")
+
+@app.route('/api/v1/movies', methods=['POST'])
+def movies():
+    movie_form = MovieForm()
+    if movie_form.validate_on_submit:
+        movie_form.validate()
+        if not movie_form.errors:
+            # Get file data and save to uploads folder
+            title = movie_form.title.data
+            description = movie_form.description.data
+            poster = request.files['poster'] or movie_form.poster.data
+            file_path = app.config['UPLOAD_FOLDER']
+            file_in = secure_filename(poster.filename)
+            name, ext = file_in.split(".") 
+            file_name = name + "_" + datetime.isoformat(datetime.now(), "T", "microseconds") + f".{ext}"
+            movie = Movie(title, description, file_name)
+            try:
+                db.session.add(movie)
+                poster.save(os.path.join(file_path,file_name))
+                db.session.commit()
+                response = SUCCESS
+                response['title'] = title
+                response['description'] = description
+                response['poster'] = file_name
+                return make_response(response)
+            except Exception:
+                # delete poster
+                if os.path.exists(os.path.join(file_path,file_name)):
+                    os.remove(os.path.join(file_path,file_name))
+                    response = ERROR
+                    response['errors'].append({'message': 'Unable to save poster!'})
+        else:
+            response = ERROR
+            response['errors'] = form_errors(movie_form)
+            return make_response(response,404)
+    response = ERROR
+    response['errors'].append({"method": request.method, "message": "Invalid method used!"})
+    return make_response(response, 404)
 
 
 ###

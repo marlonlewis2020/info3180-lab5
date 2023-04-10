@@ -45,40 +45,53 @@ def movies():
     if movie_form.validate_on_submit:
         movie_form.validate()
         if not movie_form.errors:
-            # Save form data and its photo file to table and uploads folder respectively
+            # get form data and its photo file to be saved
             title = movie_form.title.data
             description = movie_form.description.data
             poster = request.files['poster'] or movie_form.poster.data
+            
+            # get filename and rename to save in upload folder directory
             file_path = app.config['UPLOAD_FOLDER']
             file_in = secure_filename(poster.filename)
             name, ext = file_in.split(".") 
             file_name = name + "_" + datetime.strftime(datetime.now(),"%Y-%m-%dT%H-%M-%S") + f".{ext}"
+            
+            # create movie object to be added to database
             movie = Movie(title, description, file_name)
             try:
+                # create uploads directory if not exists
+                path = os.path.join(os.getcwd(),file_path)
+                if not os.path.exists(path):
+                    os.mkdir(path)
+                
+                # add movie to database and save poster image  
                 db.session.add(movie)
                 poster.save(os.path.join(file_path,file_name))
                 db.session.commit()
+                
+                # build out the json object dictionary to send 
                 response = SUCCESS
                 response['title'] = title
                 response['description'] = description
                 response['poster'] = file_name
                 return make_response(response)
             except OSError:
+                # build response when unable to save photo
                 response = ERROR
-                response['errors'].append({'message': 'Unable to save poster!'})
+                response['errors'].append('Unable to save movie to database - Error saving poster image!')
             except Exception:
                 # delete poster
                 if os.path.exists(os.path.join(file_path,file_name)):
                     os.remove(os.path.join(file_path,file_name))
                     response = ERROR
-                    response['errors'].append({'message': 'Unable to save movie!'})
+                    response['errors'].append('Unable to save movie to database - Error updating database!')
         else:
             response = ERROR
             response['errors'] = form_errors(movie_form)
-            return make_response(response,404)
+            return make_response(response,400)
     response = ERROR
     response['errors'].append({"method": request.method, "message": "Invalid method used!"})
-    return make_response(response, 404)
+    return make_response(response, 400)
 
 
 ###

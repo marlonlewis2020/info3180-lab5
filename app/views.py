@@ -6,6 +6,7 @@ This file creates your application.
 """
 
 from app import app, db
+from flask_wtf.csrf import generate_csrf
 from app.forms import MovieForm
 from app.models import Movie
 from flask import render_template, request, jsonify, make_response, send_file
@@ -34,20 +35,24 @@ SUCCESS = {
 def index():
     return jsonify(message="This is the beginning of our API")
 
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+ return jsonify({'csrf_token': generate_csrf()})
+
 @app.route('/api/v1/movies', methods=['POST'])
 def movies():
     movie_form = MovieForm()
     if movie_form.validate_on_submit:
         movie_form.validate()
         if not movie_form.errors:
-            # Get file data and save to uploads folder
+            # Save form data and its photo file to table and uploads folder respectively
             title = movie_form.title.data
             description = movie_form.description.data
             poster = request.files['poster'] or movie_form.poster.data
             file_path = app.config['UPLOAD_FOLDER']
             file_in = secure_filename(poster.filename)
             name, ext = file_in.split(".") 
-            file_name = name + "_" + datetime.isoformat(datetime.now(), "T", "microseconds") + f".{ext}"
+            file_name = name + "_" + datetime.strftime(datetime.now(),"%Y-%m-%dT%H-%M-%S") + f".{ext}"
             movie = Movie(title, description, file_name)
             try:
                 db.session.add(movie)
@@ -58,12 +63,15 @@ def movies():
                 response['description'] = description
                 response['poster'] = file_name
                 return make_response(response)
+            except OSError:
+                response = ERROR
+                response['errors'].append({'message': 'Unable to save poster!'})
             except Exception:
                 # delete poster
                 if os.path.exists(os.path.join(file_path,file_name)):
                     os.remove(os.path.join(file_path,file_name))
                     response = ERROR
-                    response['errors'].append({'message': 'Unable to save poster!'})
+                    response['errors'].append({'message': 'Unable to save movie!'})
         else:
             response = ERROR
             response['errors'] = form_errors(movie_form)

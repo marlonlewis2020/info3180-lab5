@@ -3,7 +3,7 @@ from datetime import datetime
 from app import db
 
 class Movie(db.Model):
-    __tablename__ = "users"
+    __tablename__ = "movies"
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(80), index=True, nullable=False)
     description = db.Column(db.String(80), nullable=False)

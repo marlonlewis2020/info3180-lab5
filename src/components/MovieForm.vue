@@ -50,11 +50,15 @@
     onMounted(() => {
         getCsrfToken();
     });
+
+    function clearAlerts() {
+        displayAlerts.value = false;
+    }
     
     function saveMovie() {
-        // const poster = $('#poster').files[0];
-        // console.log("poster:", poster);
+        
         let form_data = new FormData($('#movieForm')[0]);
+        clearAlerts();
 
         fetch("/api/v1/movies", {
             method: 'POST',

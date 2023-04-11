@@ -20,8 +20,8 @@
 <template>
     <h1>Movies</h1>
     
-    <div class="flex-row">
-        <div v-for="movie in movies" :key="movie.id" class="card flex-row" style="width:50%;height:250px;">
+    <div class="row">
+        <div v-for="movie in movies" :key="movie.id" class="flex-row card col-sm-6 ps-0 ms-5 mb-3" style="width:45%;height:200px;">
             <img class="card-img" :src="`uploads/${movie.poster}`" alt="movie image" style="width:30%;">
             <div class="card-body">
                 <h5 class="card-title">{{ movie.title }}</h5>

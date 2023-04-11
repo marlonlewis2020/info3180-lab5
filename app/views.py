@@ -48,8 +48,8 @@ def movies():
         movie_form.validate()
         if not movie_form.errors:
             # get form data and its photo file to be saved
-            title = movie_form.title.data.trim()
-            description = movie_form.description.data.trim()
+            title = movie_form.title.data.strip()
+            description = movie_form.description.data.strip()
             poster = request.files['poster'] or movie_form.poster.data
             
             # get filename and rename to save in upload folder directory

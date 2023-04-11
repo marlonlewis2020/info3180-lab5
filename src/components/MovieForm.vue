@@ -1,8 +1,9 @@
 <template>
-    <div :class="[response, bg-danger]" :value="status"  v-if="value">
-        <ul v-if="value=='error'">
+    <div v-if="displayAlerts" :class="[(status=='success' || status=='error')? (( status!=='success' ) ? alertDanger : alertSuccess) : 'alert']">
+        <ul v-if="status=='error'">
             <li v-for="error in errors">{{ error }}</li>
         </ul>
+        <span v-else>{{ message }}</span>
     </div>
     <div class="response" :value="status" v-if="value=='success'">
         <span class="alert alert-success">{{ message }}</span>
@@ -27,9 +28,13 @@
 <script setup>
     import { ref, onMounted } from "vue";
 
-    let status;
-    let message;
-    let errors;
+    const alertSuccess = " alert alert-success";
+    const alertDanger = " alert alert-danger";
+    let displayAlerts=ref(false);
+
+    let status=ref("");
+    let errors = ref([]);
+    let message = ref("");
 
     let csrf_token = ref("");
 
@@ -61,19 +66,26 @@
             body: form_data
         })
         .then(function (response) {
-            return response.json();
+            const res = response.json();
+            if (response.status===400) {
+                return res;
+            }
+            return res;
         })
         .then(function (data) {
             // display a success message
             status = data.status;
-            message = data.message;
+            displayAlerts.value = true;
+            console.log("STATUS:", status);
+            if (status == "error") {
+                errors.value = data.errors;
+                console.log(errors.value);
+            } else {
+                errors.value = []
+                message.value = data.message;
+            }
             console.log(data);
         })
-        .catch(function (error) {
-            status = error.status;
-            errors = error.errors;
-            console.log(error);
-        });
     }
 
 </script>

@@ -9,7 +9,7 @@ from app import app, db
 from flask_wtf.csrf import generate_csrf
 from app.forms import MovieForm
 from app.models import Movie
-from flask import render_template, request, jsonify, make_response, send_file
+from flask import render_template, request, jsonify, make_response, send_from_directory
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
@@ -27,6 +27,8 @@ SUCCESS = {
     'poster': ''
 }
 
+MOVIES = {'movies':[]}
+
 ###
 # Routing for your application.
 ###
@@ -39,15 +41,15 @@ def index():
 def get_csrf():
  return jsonify({'csrf_token': generate_csrf()})
 
-@app.route('/api/v1/movies', methods=['POST'])
+@app.route('/api/v1/movies', methods=['GET', 'POST'])
 def movies():
     movie_form = MovieForm()
-    if movie_form.validate_on_submit:
+    if request.method=='POST' and movie_form.validate_on_submit:
         movie_form.validate()
         if not movie_form.errors:
             # get form data and its photo file to be saved
-            title = movie_form.title.data
-            description = movie_form.description.data
+            title = movie_form.title.data.trim()
+            description = movie_form.description.data.trim()
             poster = request.files['poster'] or movie_form.poster.data
             
             # get filename and rename to save in upload folder directory
@@ -89,10 +91,26 @@ def movies():
             response = ERROR
             response['errors'] = form_errors(movie_form)
             return make_response(response,400)
+    else:
+        response = MOVIES
+        movies = db.session.query(Movie.id, Movie.title, Movie.description, Movie.poster).all()
+        response['movies'] = [dict(zip(['id', 'title', 'description', 'poster'], mov)) for mov in movies]
+        return make_response(response,200)
     response = ERROR
     response['errors'].append({"method": request.method, "message": "Invalid method used!"})
     return make_response(response, 400)
+        
 
+@app.route("/api/v1/posters/<filename>", methods=['GET'])
+def get_poster(filename):
+    response =  ERROR
+    response['errors'] = []
+    response['errors'].append("Image not found!")
+    for dir, subdirs, files in os.walk(os.getcwd()+app.config['UPLOAD_FOLDER']):
+        for file in files:
+            if filename.lower() == file.lower():
+                return send_from_directory(dir, file)
+    return make_response(response,404)
 
 ###
 # The functions below should be applicable to all Flask apps.

@@ -1,4 +1,12 @@
 <template>
+    <div :class="[response, bg-danger]" :value="status"  v-if="value">
+        <ul v-if="value=='error'">
+            <li v-for="error in errors">{{ error }}</li>
+        </ul>
+    </div>
+    <div class="response" :value="status" v-if="value=='success'">
+        <span class="alert alert-success">{{ message }}</span>
+    </div>
     <form id="movieForm" action="" method="post" @submit.prevent="saveMovie">
         <div class="form-group mb-3">
             <label for="title" class="form-label">Movie Title</label>
@@ -18,6 +26,10 @@
 
 <script setup>
     import { ref, onMounted } from "vue";
+
+    let status;
+    let message;
+    let errors;
 
     let csrf_token = ref("");
 
@@ -53,9 +65,13 @@
         })
         .then(function (data) {
             // display a success message
+            status = data.status;
+            message = data.message;
             console.log(data);
         })
         .catch(function (error) {
+            status = error.status;
+            errors = error.errors;
             console.log(error);
         });
     }

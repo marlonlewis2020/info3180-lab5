@@ -11,11 +11,11 @@
     <form id="movieForm" action="" method="post" @submit.prevent="saveMovie">
         <div class="form-group mb-3">
             <label for="title" class="form-label">Movie Title</label>
-            <input type="text" name="title" class="form-control" />
+            <input type="text" name="title" class="form-control" maxlength="80" />
         </div>
         <div class="form-group mb-3">
             <label for="description" class="form-label">Description</label>
-            <textarea id="description" name="description" class="form-control" > </textarea>
+            <textarea id="description" name="description" class="form-control" maxlength="80"> </textarea>
         </div>
         <div class="form-group mb-3">
             <label for="poster" class="form-label">Poster</label>
